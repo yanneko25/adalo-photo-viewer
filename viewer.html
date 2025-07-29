@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    #wrapper {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    img {
+      max-width: none;
+      max-height: none;
+      transform-origin: 0 0;
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+      transition: transform 0.2s ease;
+    }
+
+    /* Styling for on-screen arrow buttons */
+    .arrow-btn {
+      position: absolute;
+      background-color: #ff8f8f;
+      border: none;
+      padding: 15px;
+      border-radius: 50%;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      cursor: pointer;
+      font-size: 20px;
+      color: white;
+      font-weight: bold;
+      transition: all 0.3s ease;
+    }
+
+    .arrow-btn:hover {
+      background-color: #ff66b2;
+      transform: scale(1.1);
+    }
+
+    .up { top: 20px; }
+    .down { bottom: 20px; }
+    .left { left: 20px; }
+    .right { right: 20px; }
+
+  </style>
+</head>
+<body>
+  <div id="wrapper">
+    <img id="img" src="" alt="Zoomable Image">
+    
+    <!-- On-screen arrow buttons -->
+    <button class="arrow-btn up">↑</button>
+    <button class="arrow-btn down">↓</button>
+    <button class="arrow-btn left">←</button>
+    <button class="arrow-btn right">→</button>
+  </div>
+
+  <script>
+    function getImageURL() {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get('imgURL');
+    }
+
+    const img = document.getElementById('img');
+    img.src = getImageURL();
+
+    let scale = 1, originX = 0, originY = 0;
+    let isDragging = false, startX, startY;
+
+    // Enable zoom with mouse wheel
+    img.addEventListener('wheel', e => {
+      e.preventDefault();
+      if (e.deltaY < 0) { // Zoom in
+        scale = Math.min(scale + 0.1, 5);
+      } else { // Zoom out
+        scale = Math.max(scale - 0.1, 1);
+      }
+
+      img.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
+    });
+
+    // Enable panning with mouse dragging (only when zoomed in)
+    img.addEventListener('mousedown', e => {
+      if (scale <= 1) return;
+      isDragging = true;
+      startX = e.clientX - originX;
+      startY = e.clientY - originY;
+      img.style.cursor = 'grabbing';
+    });
+
+    window.addEventListener('mouseup', () => {
+      isDragging = false;
+      img.style.cursor = 'grab';
+    });
+
+    window.addEventListener('mousemove', e => {
+      if (!isDragging || scale <= 1) return;
+      originX = e.clientX - startX;
+      originY = e.clientY - startY;
+      img.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
+    });
+
+    // Keyboard arrow key navigation
+    window.addEventListener('keydown', e => {
+      if (scale <= 1) return; // Only allow panning when zoomed in
+
+      const step = 10; // Number of pixels to move the image per arrow press
+      if (e.key === 'ArrowUp') {
+        originY += step;
+      } else if (e.key === 'ArrowDown') {
+        originY -= step;
+      } else if (e.key === 'ArrowLeft') {
+        originX += step;
+      } else if (e.key === 'ArrowRight') {
+        originX -= step;
+      }
+
+      img.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
+    });
+
+    // On-screen button click navigation
+    document.querySelector('.up').addEventListener('click', () => {
+      if (scale > 1) originY += 10;
+      img.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
+    });
+
+    document.querySelector('.down').addEventListener('click', () => {
+      if (scale > 1) originY -= 10;
+      img.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
+    });
+
+    document.querySelector('.left').addEventListener('click', () => {
+      if (scale > 1) originX += 10;
+      img.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
+    });
+
+    document.querySelector('.right').addEventListener('click', () => {
+      if (scale > 1) originX -= 10;
+      img.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
+    });
+  </script>
+</body>
+</html>
