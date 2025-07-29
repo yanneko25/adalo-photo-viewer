@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Adalo Photo Viewer</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      overflow: hidden;
+      height: 100%;
+    }
+
+    #viewer-container {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+      background: #000;
+    }
+
+    #main-img {
+      max-width: none;
+      max-height: none;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%) scale(1);
+      transition: transform 0.3s ease;
+      cursor: grab;
+    }
+
+    .arrow-btn {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      background: rgba(255, 182, 193, 0.8); /* fluffy pink */
+      color: #fff;
+      font-size: 24px;
+      font-weight: bold;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      z-index: 10;
+    }
+
+    #left-arrow { left: 20px; top: 50%; transform: translateY(-50%); }
+    #right-arrow { right: 20px; top: 50%; transform: translateY(-50%); }
+    #up-arrow { top: 20px; left: 50%; transform: translateX(-50%); }
+    #down-arrow { bottom: 20px; left: 50%; transform: translateX(-50%); }
+  </style>
+</head>
+<body>
+  <div id="viewer-container">
+    <img id="main-img" />
+    <button class="arrow-btn" id="left-arrow">&#8592;</button>
+    <button class="arrow-btn" id="right-arrow">&#8594;</button>
+    <button class="arrow-btn" id="up-arrow">&#8593;</button>
+    <button class="arrow-btn" id="down-arrow">&#8595;</button>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const imgUrl = urlParams.get('img');
+    const img = document.getElementById("main-img");
+    if (!imgUrl) {
+      alert("No image found in URL.");
+    } else {
+      img.src = imgUrl;
+    }
+
+    let zoom = 1;
+    let panX = 0;
+    let panY = 0;
+    let isDragging = false;
+    let startX, startY;
+
+    function updateTransform() {
+      img.style.transform = `translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${zoom})`;
+    }
+
+    img.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      zoom = Math.min(Math.max(zoom + delta, 1), 5);
+      updateTransform();
+    });
+
+    img.addEventListener('mousedown', (e) => {
+      if (zoom <= 1) return;
+      isDragging = true;
+      startX = e.clientX - panX;
+      startY = e.clientY - panY;
+      img.style.cursor = 'grabbing';
+    });
+
+    document.addEventListener('mouseup', () => {
+      isDragging = false;
+      img.style.cursor = 'grab';
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      panX = e.clientX - startX;
+      panY = e.clientY - startY;
+      updateTransform();
+    });
+
+    function move(direction) {
+      if (zoom <= 1) return;
+      const amount = 50;
+      switch (direction) {
+        case 'left': panX += amount; break;
+        case 'right': panX -= amount; break;
+        case 'up': panY += amount; break;
+        case 'down': panY -= amount; break;
+      }
+      updateTransform();
+    }
+
+    document.getElementById('left-arrow').onclick = () => move('left');
+    document.getElementById('right-arrow').onclick = () => move('right');
+    document.getElementById('up-arrow').onclick = () => move('up');
+    document.getElementById('down-arrow').onclick = () => move('down');
+
+    document.addEventListener('keydown', (e) => {
+      if (zoom <= 1) return;
+      switch (e.key) {
+        case 'ArrowLeft': move('left'); break;
+        case 'ArrowRight': move('right'); break;
+        case 'ArrowUp': move('up'); break;
+        case 'ArrowDown': move('down'); break;
+      }
+    });
+  </script>
+</body>
+</html>
