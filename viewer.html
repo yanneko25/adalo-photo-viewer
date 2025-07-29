@@ -10,6 +10,16 @@
       height: 100%;
       overflow: hidden;
     }
+
+    #wrapper {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
     img {
       max-width: none;
       max-height: none;
@@ -17,11 +27,12 @@
       cursor: grab;
       touch-action: none;
       user-select: none;
+      transition: transform 0.2s ease;
     }
   </style>
 </head>
 <body>
-  <div id="wrapper" style="width: 100%; height: 100%; overflow: hidden;">
+  <div id="wrapper">
     <img id="img" src="" alt="Zoomable Image">
   </div>
 
@@ -37,14 +48,22 @@
     let scale = 1, originX = 0, originY = 0;
     let isDragging = false, startX, startY;
 
+    // Enable zoom
     img.addEventListener('wheel', e => {
       e.preventDefault();
-      const delta = -e.deltaY * 0.001;
-      scale = Math.min(Math.max(0.5, scale + delta), 5);
+      if (e.deltaY < 0) { // zoom in
+        scale = Math.min(scale + 0.1, 5); // Limit zoom-in to max scale
+      } else { // zoom out
+        scale = Math.max(scale - 0.1, 1); // Limit zoom-out to 1 (no smaller)
+      }
+
       img.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
     });
 
+    // Enable panning when zoomed in
     img.addEventListener('mousedown', e => {
+      if (scale <= 1) return; // Don't allow panning when zoomed out
+
       isDragging = true;
       startX = e.clientX - originX;
       startY = e.clientY - originY;
@@ -57,7 +76,8 @@
     });
 
     window.addEventListener('mousemove', e => {
-      if (!isDragging) return;
+      if (!isDragging || scale <= 1) return; // Only allow dragging if zoomed in
+
       originX = e.clientX - startX;
       originY = e.clientY - startY;
       img.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
