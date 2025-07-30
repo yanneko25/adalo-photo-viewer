@@ -29,7 +29,6 @@
       touch-action: none;
       user-select: none;
       transition: transform 0.2s ease;
-      object-fit: contain;
     }
 
     /* Styling for on-screen arrow buttons */
@@ -71,88 +70,90 @@
   </div>
 
   <script>
-    function getImageURL() {
-      const urlParams = new URLSearchParams(window.location.search);
-      return urlParams.get('imgURL');
-    }
+    <script>
+  function getImageURL() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('imgURL');
+  }
 
-    const img = document.getElementById('img');
-    img.src = getImageURL();
+  const img = document.getElementById('img');
+  img.src = getImageURL();
 
-    let scale = 1, originX = 0, originY = 0;
-    let isDragging = false, startX, startY;
+  let scale = 1;
+  let originX = 0, originY = 0;
+  let isDragging = false, startX, startY;
 
-    // Enable zoom with mouse wheel
-    img.addEventListener('wheel', e => {
-      e.preventDefault();
-      if (e.deltaY < 0) { // Zoom in
-        scale = Math.min(scale + 0.1, 5);
-      } else { // Zoom out
-        scale = Math.max(scale - 0.1, 1);
-      }
+  function clampPan() {
+    const imgRect = img.getBoundingClientRect();
+    const wrapper = document.getElementById('wrapper');
+    const wrapperRect = wrapper.getBoundingClientRect();
 
-      img.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
-    });
+    const maxX = (img.naturalWidth * scale - wrapperRect.width) / 2;
+    const maxY = (img.naturalHeight * scale - wrapperRect.height) / 2;
 
-    // Enable panning with mouse dragging (only when zoomed in)
-    img.addEventListener('mousedown', e => {
-      if (scale <= 1) return;
-      isDragging = true;
-      startX = e.clientX - originX;
-      startY = e.clientY - originY;
-      img.style.cursor = 'grabbing';
-    });
+    originX = Math.max(-maxX, Math.min(originX, maxX));
+    originY = Math.max(-maxY, Math.min(originY, maxY));
+  }
 
-    window.addEventListener('mouseup', () => {
-      isDragging = false;
-      img.style.cursor = 'grab';
-    });
+  function updateTransform() {
+    clampPan();
+    img.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
+  }
 
-    window.addEventListener('mousemove', e => {
-      if (!isDragging || scale <= 1) return;
-      originX = e.clientX - startX;
-      originY = e.clientY - startY;
-      img.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
-    });
+  // Zoom with mouse wheel
+  img.addEventListener('wheel', e => {
+    e.preventDefault();
+    const delta = e.deltaY < 0 ? 0.1 : -0.1;
+    scale = Math.min(Math.max(scale + delta, 1), 5);
+    updateTransform();
+  });
 
-    // Keyboard arrow key navigation
-    window.addEventListener('keydown', e => {
-      if (scale <= 1) return; // Only allow panning when zoomed in
+  // Drag to pan (only when zoomed in)
+  img.addEventListener('mousedown', e => {
+    if (scale <= 1) return;
+    isDragging = true;
+    startX = e.clientX - originX;
+    startY = e.clientY - originY;
+    img.style.cursor = 'grabbing';
+  });
 
-      const step = 10; // Number of pixels to move the image per arrow press
-      if (e.key === 'ArrowUp') {
-        originY += step;
-      } else if (e.key === 'ArrowDown') {
-        originY -= step;
-      } else if (e.key === 'ArrowLeft') {
-        originX += step;
-      } else if (e.key === 'ArrowRight') {
-        originX -= step;
-      }
+  window.addEventListener('mouseup', () => {
+    isDragging = false;
+    img.style.cursor = scale > 1 ? 'grab' : 'default';
+  });
 
-      img.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
-    });
+  window.addEventListener('mousemove', e => {
+    if (!isDragging || scale <= 1) return;
+    originX = e.clientX - startX;
+    originY = e.clientY - startY;
+    updateTransform();
+  });
 
-    // On-screen button click navigation
-    document.querySelector('.up').addEventListener('click', () => {
-      if (scale > 1) originY += 10;
-      img.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
-    });
+  // Keyboard navigation
+  window.addEventListener('keydown', e => {
+    if (scale <= 1) return;
+    const step = 30;
+    if (e.key === 'ArrowUp') originY += step;
+    if (e.key === 'ArrowDown') originY -= step;
+    if (e.key === 'ArrowLeft') originX += step;
+    if (e.key === 'ArrowRight') originX -= step;
+    updateTransform();
+  });
 
-    document.querySelector('.down').addEventListener('click', () => {
-      if (scale > 1) originY -= 10;
-      img.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
-    });
+  // Button navigation
+  const move = (dx, dy) => {
+    if (scale <= 1) return;
+    originX += dx;
+    originY += dy;
+    updateTransform();
+  };
 
-    document.querySelector('.left').addEventListener('click', () => {
-      if (scale > 1) originX += 10;
-      img.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
-    });
+  document.querySelector('.up').addEventListener('click', () => move(0, 30));
+  document.querySelector('.down').addEventListener('click', () => move(0, -30));
+  document.querySelector('.left').addEventListener('click', () => move(30, 0));
+  document.querySelector('.right').addEventListener('click', () => move(-30, 0));
+</script>
 
-    document.querySelector('.right').addEventListener('click', () => {
-      if (scale > 1) originX -= 10;
-      img.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
-    });
   </script>
 </body>
 </html>
