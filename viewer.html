@@ -31,7 +31,6 @@
       transition: transform 0.2s ease;
     }
 
-    /* Styling for on-screen arrow buttons */
     .arrow-btn {
       position: absolute;
       background-color: #ff8f8f;
@@ -51,18 +50,15 @@
       transform: scale(1.1);
     }
 
-    .up { top: 20px; }
-    .down { bottom: 20px; }
-    .left { left: 20px; }
-    .right { right: 20px; }
-
+    .up { top: 20px; left: 50%; transform: translateX(-50%); }
+    .down { bottom: 20px; left: 50%; transform: translateX(-50%); }
+    .left { left: 20px; top: 50%; transform: translateY(-50%); }
+    .right { right: 20px; top: 50%; transform: translateY(-50%); }
   </style>
 </head>
 <body>
   <div id="wrapper">
     <img id="img" src="" alt="Zoomable Image">
-    
-    <!-- On-screen arrow buttons -->
     <button class="arrow-btn up">↑</button>
     <button class="arrow-btn down">↓</button>
     <button class="arrow-btn left">←</button>
@@ -70,90 +66,86 @@
   </div>
 
   <script>
-    <script>
-  function getImageURL() {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('imgURL');
-  }
-
-  const img = document.getElementById('img');
-  img.src = getImageURL();
-
-  let scale = 1;
-  let originX = 0, originY = 0;
-  let isDragging = false, startX, startY;
-
-  function clampPan() {
-    const imgRect = img.getBoundingClientRect();
+    const img = document.getElementById('img');
     const wrapper = document.getElementById('wrapper');
-    const wrapperRect = wrapper.getBoundingClientRect();
 
-    const maxX = (img.naturalWidth * scale - wrapperRect.width) / 2;
-    const maxY = (img.naturalHeight * scale - wrapperRect.height) / 2;
+    let scale = 1;
+    let originX = 0, originY = 0;
+    let isDragging = false, startX, startY;
 
-    originX = Math.max(-maxX, Math.min(originX, maxX));
-    originY = Math.max(-maxY, Math.min(originY, maxY));
-  }
+    function getImageURL() {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get('imgURL');
+    }
 
-  function updateTransform() {
-    clampPan();
-    img.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
-  }
+    function clampPan() {
+      const wrapperRect = wrapper.getBoundingClientRect();
+      const maxX = Math.max(0, (img.naturalWidth * scale - wrapperRect.width) / 2);
+      const maxY = Math.max(0, (img.naturalHeight * scale - wrapperRect.height) / 2);
 
-  // Zoom with mouse wheel
-  img.addEventListener('wheel', e => {
-    e.preventDefault();
-    const delta = e.deltaY < 0 ? 0.1 : -0.1;
-    scale = Math.min(Math.max(scale + delta, 1), 5);
-    updateTransform();
-  });
+      originX = Math.min(Math.max(originX, -maxX), maxX);
+      originY = Math.min(Math.max(originY, -maxY), maxY);
+    }
 
-  // Drag to pan (only when zoomed in)
-  img.addEventListener('mousedown', e => {
-    if (scale <= 1) return;
-    isDragging = true;
-    startX = e.clientX - originX;
-    startY = e.clientY - originY;
-    img.style.cursor = 'grabbing';
-  });
+    function updateTransform() {
+      clampPan();
+      img.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
+    }
 
-  window.addEventListener('mouseup', () => {
-    isDragging = false;
-    img.style.cursor = scale > 1 ? 'grab' : 'default';
-  });
+    img.addEventListener('load', () => {
+      updateTransform();
+    });
 
-  window.addEventListener('mousemove', e => {
-    if (!isDragging || scale <= 1) return;
-    originX = e.clientX - startX;
-    originY = e.clientY - startY;
-    updateTransform();
-  });
+    img.src = getImageURL();
 
-  // Keyboard navigation
-  window.addEventListener('keydown', e => {
-    if (scale <= 1) return;
-    const step = 30;
-    if (e.key === 'ArrowUp') originY += step;
-    if (e.key === 'ArrowDown') originY -= step;
-    if (e.key === 'ArrowLeft') originX += step;
-    if (e.key === 'ArrowRight') originX -= step;
-    updateTransform();
-  });
+    img.addEventListener('wheel', e => {
+      e.preventDefault();
+      const delta = e.deltaY < 0 ? 0.1 : -0.1;
+      scale = Math.min(Math.max(scale + delta, 1), 5);
+      updateTransform();
+    });
 
-  // Button navigation
-  const move = (dx, dy) => {
-    if (scale <= 1) return;
-    originX += dx;
-    originY += dy;
-    updateTransform();
-  };
+    img.addEventListener('mousedown', e => {
+      if (scale <= 1) return;
+      isDragging = true;
+      startX = e.clientX - originX;
+      startY = e.clientY - originY;
+      img.style.cursor = 'grabbing';
+    });
 
-  document.querySelector('.up').addEventListener('click', () => move(0, 30));
-  document.querySelector('.down').addEventListener('click', () => move(0, -30));
-  document.querySelector('.left').addEventListener('click', () => move(30, 0));
-  document.querySelector('.right').addEventListener('click', () => move(-30, 0));
-</script>
+    window.addEventListener('mouseup', () => {
+      isDragging = false;
+      img.style.cursor = scale > 1 ? 'grab' : 'default';
+    });
 
+    window.addEventListener('mousemove', e => {
+      if (!isDragging || scale <= 1) return;
+      originX = e.clientX - startX;
+      originY = e.clientY - startY;
+      updateTransform();
+    });
+
+    window.addEventListener('keydown', e => {
+      if (scale <= 1) return;
+      const step = 30;
+      if (e.key === 'ArrowUp') originY += step;
+      if (e.key === 'ArrowDown') originY -= step;
+      if (e.key === 'ArrowLeft') originX += step;
+      if (e.key === 'ArrowRight') originX -= step;
+      updateTransform();
+    });
+
+    const move = (dx, dy) => {
+      if (scale <= 1) return;
+      originX += dx;
+      originY += dy;
+      updateTransform();
+    };
+
+    document.querySelector('.up').addEventListener('click', () => move(0, 30));
+    document.querySelector('.down').addEventListener('click', () => move(0, -30));
+    document.querySelector('.left').addEventListener('click', () => move(30, 0));
+    document.querySelector('.right').addEventListener('click', () => move(-30, 0));
   </script>
 </body>
 </html>
